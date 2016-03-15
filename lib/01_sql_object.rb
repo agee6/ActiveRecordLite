@@ -39,14 +39,14 @@ class SQLObject
       #met_name = "#{col}"
       define_method(col) do
         get_name = "@#{col}"
-        @attributes[col]
+        self.attributes[col]
         #instance_variable_get(get_name)
       end
       set_met = "#{col}="
       define_method(set_met) do |obj|
         name_set = "@#{col}"
 
-        attributes[col]  = obj
+        self.attributes[col]  = obj
         #instance_variable_set(name_set, obj)
       end
 
@@ -84,7 +84,7 @@ class SQLObject
   end
 
   def self.parse_all(results)
-    puts results[0]
+  
     results.map do |ele|
 
       self.new(ele)
@@ -175,23 +175,25 @@ class SQLObject
 
   def update
 
-    col_names = self.class.columns
+    # col_names = self.class.columns
+    #
+    # question_marks = ["?"] * col_names.length
+    #
+    # values = attribute_values
+    # values = to_query_string(values)
+    new_line = self.class.columns
+      .map { |attr| "#{attr} = ?" }.join(", ")
+    #  col_names = to_query_string(col_names)
+    # # puts col_names
+    # question_marks = to_query_string(question_marks)
 
-    question_marks = ["?"] * col_names.length
-
-    values = attribute_values
-    #values = to_query_string(values)
-    col_names = to_query_string(col_names)
-    puts col_names
-    question_marks = to_query_string(question_marks)
-
-    cols = DBConnection.execute(<<-SQL, *values)
+    cols = DBConnection.execute(<<-SQL, *attribute_values, id)
       UPDATE
         #{self.class.table_name}
       SET
-        #{set_line}
+        #{new_line}
       WHERE
-        id = #{self.id}
+        #{self.class.table_name}.id = ?
 
     SQL
   end
@@ -204,11 +206,13 @@ class SQLObject
     total[0..-2]
   end
 
-
-
   def save
-    self.insert
-    self.update
-    # ...
+    id.nil? ? self.insert : self.update
   end
+
+  # def save
+  #   self.insert
+  #   self.update
+  #   # ...
+  # end
 end
